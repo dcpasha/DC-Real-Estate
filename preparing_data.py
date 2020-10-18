@@ -17,7 +17,7 @@ print("Address data is loaded")
 # Let's look at first five rows and shape of the Residential data frame
 # data_residential.head()
 
-# STEP 1:Investigate Residential Data
+# STEP 1: Investigate Residential Data
 # Column description
 # SSL - The square, suffix, and lot
 # AYB - Actual Year Build. USE THIS.
@@ -26,19 +26,19 @@ print("Address data is loaded")
 # GBA - Gross Building Area
 
 
-# data_residential.info()  # Non-null count and dtypes
-# data_residential.shape (108499, 38) Tells us the size (rows, columns) of the data frame
-# data_residential.describe()  # mean, std,
+data_residential.info()  # Non-null count and dtypes
+data_residential.shape # Tells us the size (rows, columns) of the data frame
+data_residential.describe()  # mean, std,
 
 # Investigate the dataset:
 # There are 38 columns. Let's investigate them and exclude those that are redundant.
 # The columns 'ROOF_D', 'INTWALL_D', and 'EXTWALL_D' tell us from what materials the walls and roof are made.
-# data_residential['INTWALL_D'].value_counts()
-# data_residential['EXTWALL_D'].value_counts()
-# data_residential['ROOF_D'].value_counts()
+data_residential['INTWALL_D'].value_counts()
+data_residential['EXTWALL_D'].value_counts()
+data_residential['ROOF_D'].value_counts()
 
 # The following columns: 'HEAT', 'EXTWALL', 'ROOF',  'INTWALL' are interger values of their counterpart columns and can be dropped.
-# data_residential['ROOF_D'].value_counts()
+data_residential['ROOF_D'].value_counts()
 # Let's make a list of columns that does not carry a lot information and drop them.
 columns_to_drop = ['OBJECTID', 'HEAT', 'STRUCT', 'GRADE', 'GRADE_D', 'CNDTN', 'CNDTN_D', 'EXTWALL', 'ROOF', 'QUALIFIED',
                    'STYLE', 'STYLE_D', 'INTWALL', 'USECODE', 'GIS_LAST_MOD_DTTM', 'BLDG_NUM']
@@ -51,8 +51,8 @@ columns_to_keep = ['BATHRM', 'HF_BATHRM', 'AC', 'HEAT_D', 'NUM_UNITS', 'ROOMS', 
 # for i in range(len(columns_to_drop)):
 #     if(columns_to_drop[i] in columns_to_keep):
 #         print(columns_to_drop[i])
-# #
-# # Dropping the columns that are not useful
+#
+# Dropping the columns that are not useful
 data_residential.drop(columns_to_drop, axis=1, inplace=True)
 
 # Let's see if there are any empty entries in our data.
@@ -75,19 +75,19 @@ data_residential['FIREPLACES'] = data_residential['FIREPLACES'].fillna(value=0)
 data_residential['KITCHENS'] = data_residential['KITCHENS'].fillna(value=0)
 data_residential['BEDRM'] = data_residential['BEDRM'].fillna(value=0)
 
-# # Let's investigate 'STORIES'
+# Let's investigate 'STORIES'
 # data_residential['STORIES'].value_counts()
-# # 'STORIES' tells us how many floors a house has. If a unit is under the ground, it has 0 floors.
+# 'STORIES' tells us how many floors a house has. If a unit is under the ground, it has 0 floors.
 data_residential['STORIES'] = data_residential['STORIES'].fillna(value=1)
 data_residential['STORIES'].value_counts()
 
-# # There are some entries with missing values and a few houses with partial floors.
-# # For example, one and a half story home is a one story home with a partial second floor added to allow for more space.
-# # We will keep the partial floors in our dataset, but if you want to  round up a 1/4 floor and round down 3/4 to a partial floor.
-# # You can uncomment the code below and run it.
-# # def round_of_rating(number):
-# #     # Round a number to the closest half integer.
-# #    return round(number * 2) / 2
+# There are some entries with missing values and a few houses with partial floors.
+# For example, one and a half story home is a one story home with a partial second floor added to allow for more space.
+# We will keep the partial floors in our dataset, but if you want to  round up a 1/4 floor and round down 3/4 to a partial floor.
+# You can uncomment the code below and run it.
+# def round_of_rating(number):
+#     # Round a number to the closest half integer.
+#    return round(number * 2) / 2
 #
 #
 # # data_residential['STORIES'] = data_residential['STORIES'].apply(round_of_rating)
@@ -120,8 +120,8 @@ for i in columns_to_int:
 
 # Let's look at the 'SALEDATE' column.
 data_residential['SALEDATE'] = pd.to_datetime(data_residential['SALEDATE'], dayfirst=False)
-# data_residential["SALEDATE"].sort_values(ascending=True).head(10)
-# data_residential["SALEDATE"].sort_values(ascending=False).head(10)
+data_residential["SALEDATE"].sort_values(ascending=True).head(10)
+data_residential["SALEDATE"].sort_values(ascending=False).head(10)
 # It looks good. We do not need to make any changes.
 
 # The SSL - the square, suffix, and lot.
@@ -135,12 +135,12 @@ print(data_residential.loc[data_residential.index == '5890    0134', :])
 # Let's drop duplicate 'SSL' and only keep the last one.
 data_residential = data_residential[~data_residential.index.duplicated(keep='last')]
 
-# # Let's make a correlation and see if we can detect any anomalies visually.
-# plt.style.use('seaborn-colorblind')
-# # Basic correlogram
-# sns.pairplot(data_residential[['ROOMS', 'BATHRM', 'HF_BATHRM', 'BEDRM']], kind="scatter", diag_kind='kde',
-#              plot_kws={'alpha': 0.5, 's': 90}, size=6)
-# plt.show()
+# Let's make a correlation and see if we can detect any anomalies visually.
+plt.style.use('seaborn-colorblind')
+# Basic correlogram
+sns.pairplot(data_residential[['ROOMS', 'BATHRM', 'HF_BATHRM', 'BEDRM']], kind="scatter", diag_kind='kde',
+             plot_kws={'alpha': 0.5, 's': 90}, size=6)
+plt.show()
 
 # The graph shows us a few outliers:
 # The ROOMS X BTHRM plot shows that there is at least one property with more than 100 rooms and less than five bathrooms
@@ -157,45 +157,44 @@ data_residential.loc[:,['BATHRM','ROOMS','BEDRM','PRICE','SALEDATE']].head()
 data_residential.sort_values('SALEDATE', inplace=True)
 
 data_residential.to_csv("data_residential.csv", header=True)  # To save the residential data
-#DONE
 # TODO: redo a graph and do a new graph to make sure it looks good.
 
 # STEP 2: Investigate the Address data.
-# This dataset complements residetial data with spacial information
-# data_address.shape  # (148172, 60)
+# This dataset complements residetial data with some spacial information
 # Square Suffix Lot (SSL) will be used to merger residential data and address data.
 data_address.info()
 data_address.head()
+
 # Let's check if there are any duplicated indexes ('SSL') and treat them the same way we did with the residential information.
-data_address.index.duplicated().any()  # True, so let's drop the duplicates
+# data_address.index.duplicated().any()  # True, so let's drop the duplicates
 data_address = data_address[~data_address.index.duplicated(keep='last')]
 
-# TODO: Choose what columns I want to keep
-# address_columns = ["FULLADDRESS", "CITY", "STATE", "ZIPCODE", "NATIONALGRID", "LATITUDE", "LONGITUDE",
-#                    "ASSESSMENT_NBHD", "ASSESSMENT_SUBNBHD", "CENSUS_TRACT", "CENSUS_BLOCK", "WARD"]
-# data_address = data_address[address_columns]
+# Choosing what columns to keep
+address_columns = ["FULLADDRESS", "CITY", "STATE", "ZIPCODE", "LATITUDE", "LONGITUDE",
+                   "ASSESSMENT_NBHD", "CENSUS_TRACT",'CENSUS_BLOCK', "WARD"]
 
-# draft = pd.merge(data_residential,data_address,how="left",on="SSL")
-# draft.shape
+data_address = data_address[address_columns]
+# data_address.shape #
+# data_residential.shape #
 
-# draft.to_csv("DC_Residential_Properties.csv", header=True)
+dataset = pd.merge(data_residential,data_address,how="left",on="SSL")
+dataset.to_csv("DC_Residential_Properties.csv", header=True)
 
-# test = data_residential.copy()
+
 ############################
-# Comparing Columns:
+# Useful Commands for analysis:
+# Comparing Columns.
 # data_residential.loc[:, ['AYB', 'EYB', 'YR_RMDL']].head(100)
-# aye_eyb = data_residential.loc[:, ['AYB', 'EYB', 'YR_RMDL']].head(100)
-#
+
+# Creating a new column based on a boolean condition two other columns.
 # cond = (aye_eyb['AYB'] > aye_eyb['EYB'])
 # aye_eyb['AYB vs EYB'] = np.where(cond, "True", "False")
-# aye_eyb['AYB vs EYB'].value_counts()
-#
 # aye_eyb.loc[aye_eyb['AYB vs EYB'] == 'True',]
 # aye_eyb.loc[aye_eyb['AYB'],].value_counts()
 
 # data_address.loc['SSL'=='0202    0086']
-# data_address.loc[:,'SSL'].head()
+# Looking at a certain address at a specified SSL value.
 # data_address.loc[data_address['SSL']=='0070    2412 ', ['FULLADDRESS']]
 
-# # data_residential.loc[['2113    0136']] # shows a row of a df at the specified index
-# # data_residential.loc[['2113    0136'],['AYB','EYB']]
+# data_residential.loc[['2113    0136']] # shows a row of a df at the specified index
+# data_residential.loc[['2113    0136'],['AYB','EYB']]
