@@ -27,8 +27,8 @@ print("Address data is loaded")
 
 
 data_residential.info()  # Non-null count and dtypes
-data_residential.shape # Tells us the size (rows, columns) of the data frame
-data_residential.describe()  # mean, std,
+data_residential.shape  # Tells us the size (rows, columns) = (108499, 38) of the data frame
+data_residential.describe()  # count, mean, std, and etc.
 
 # Investigate the dataset:
 # There are 38 columns. Let's investigate them and exclude those that are redundant.
@@ -38,48 +38,44 @@ data_residential['EXTWALL_D'].value_counts()
 data_residential['ROOF_D'].value_counts()
 
 # The following columns: 'HEAT', 'EXTWALL', 'ROOF',  'INTWALL' are interger values of their counterpart columns and can be dropped.
-data_residential['ROOF_D'].value_counts()
 # Let's make a list of columns that does not carry a lot information and drop them.
 columns_to_drop = ['OBJECTID', 'HEAT', 'STRUCT', 'GRADE', 'GRADE_D', 'CNDTN', 'CNDTN_D', 'EXTWALL', 'ROOF', 'QUALIFIED',
                    'STYLE', 'STYLE_D', 'INTWALL', 'USECODE', 'GIS_LAST_MOD_DTTM', 'BLDG_NUM']
 
-columns_to_keep = ['BATHRM', 'HF_BATHRM', 'AC', 'HEAT_D', 'NUM_UNITS', 'ROOMS', 'BEDRM', 'AYB', 'YR_RMDL' 'EYB',
-                   'STORIES' 'SALEDATE', 'PRICE', 'GBA', 'STRUCT_D', 'KITCHENS', 'FIREPLACES', 'ROOF_D', 'INTWALL_D',
-                   'EXTWALL_D',
-                   'NUM_UNITS']  # I don't like QUALIFIED.
+# columns_to_keep = ['BATHRM', 'HF_BATHRM', 'AC', 'HEAT_D', 'NUM_UNITS', 'ROOMS', 'BEDRM', 'AYB', 'YR_RMDL' 'EYB',
+#                    'STORIES' 'SALEDATE', 'PRICE', 'GBA', 'STRUCT_D', 'KITCHENS', 'FIREPLACES', 'ROOF_D', 'INTWALL_D',
+#                    'EXTWALL_D',
+#                    'NUM_UNITS']
 
-# for i in range(len(columns_to_drop)):
-#     if(columns_to_drop[i] in columns_to_keep):
-#         print(columns_to_drop[i])
-#
-# Dropping the columns that are not useful
+# Dropping the columns that are not useful.
 data_residential.drop(columns_to_drop, axis=1, inplace=True)
 
 # Let's see if there are any empty entries in our data.
-# data_residential.shape # (108499, 23)
+# data_residential.shape # (108499, 22)
 # data_residential.isnull().sum()
 
 # There are a few empty entries, but 'PRICE' and 'ROOM' columns miss a lot of entires.
 # We cannot analysis houses that do not have a sales price, and at least one room.
-# It does not even constitues it as a house. Drop entries without price and room.
+# It does not even constitues it as a house. Drop entries without price and rooms.
 data_residential.dropna(subset=['PRICE', 'ROOMS'], inplace=True)
-# Let's drop entries where 'PRICE' is zero.
-data_residential = data_residential.loc[(data_residential['PRICE']!=0),:]
+# Let's also drop entries where 'PRICE' is zero.
+data_residential = data_residential.loc[(data_residential['PRICE'] != 0), :]
 
-data_residential.astype(bool).sum(axis=0)
+# data_residential.astype(bool).sum(axis=0)
 # data_residential.isnull().sum()
 
 # Now it looks better. There are still a few missing entries in columns 'KITCHENS', 'FIREPLACES' and 'BEDRM'.
 # If they are missing, let's assume that they do not exist. Thus, we replace missing values with 0.
-data_residential['FIREPLACES'] = data_residential['FIREPLACES'].fillna(value=0)
-data_residential['KITCHENS'] = data_residential['KITCHENS'].fillna(value=0)
-data_residential['BEDRM'] = data_residential['BEDRM'].fillna(value=0)
+data_residential.loc[:, 'FIREPLACES'].fillna(value=0, inplace=True)
+data_residential.loc[:, 'KITCHENS'].fillna(value=0, inplace=True)
+data_residential.loc[:, 'BEDRM'].fillna(value=0, inplace=True)
 
 # Let's investigate 'STORIES'
 # data_residential['STORIES'].value_counts()
 # 'STORIES' tells us how many floors a house has. If a unit is under the ground, it has 0 floors.
-data_residential['STORIES'] = data_residential['STORIES'].fillna(value=1)
 data_residential['STORIES'].value_counts()
+# Let's replace missing values with 1.
+data_residential.loc[:, 'STORIES'].fillna(value=1, inplace=True)
 
 # There are some entries with missing values and a few houses with partial floors.
 # For example, one and a half story home is a one story home with a partial second floor added to allow for more space.
@@ -99,14 +95,14 @@ data_residential.isnull().sum()
 # AYB - Actual Year Build. USE THIS.
 # EYB - Effective Date Build.
 # YR_RMDL - Year Remodeled
-EYB_AYB_difference = data_residential['EYB'] - data_residential['AYB']
-EYB_AYB_difference.mean()
+eyb_ayb_difference = data_residential['EYB'] - data_residential['AYB']
+eyb_ayb_mean_difference = eyb_ayb_difference.mean()
 # It is 40 years.
-# If AYB is missing, we will replace it with its EYB - 40.
+# If AYB is missing or zero, we will replace it with its EYB - 40.
 # data_residential.loc[data_residential['AYB'].isnull(), ['AYB', 'EYB']] # Shows us what entries having a missing 'AYB'
-data_residential['AYB'].fillna(data_residential['EYB'] - 40, inplace=True)
-# Replacing when 'AYB' is equal to zero, with the appropriated 'EYB' - 40.
-data_residential.loc[data_residential['AYB'] == 0, ['AYB']] = data_residential['EYB'] - 40
+data_residential['AYB'].mask(data_residential['AYB'] == 0, inplace=True)  # convert zero to na
+data_residential.loc[:, 'AYB'].fillna(data_residential['EYB'] - eyb_ayb_mean_difference, inplace=True)
+data_residential['AYB'].isnull().sum()
 
 
 # If YR_RMDL is missing, we will replace it with EYB because it is a newer date compared to AYB.
@@ -150,17 +146,20 @@ plt.show()
 # The BEDRM X ROOMS plot shows that there are properties that have more bedrooms than rooms.
 # The BEDRM X BATHRM plot i shows that there is at least one property with more than 24 bedrooms and 24 bathrooms.
 # Let's exclude these outliers from our dataset
-data_residential = data_residential[(
-        (data_residential["ROOMS"] < 100) & (data_residential["ROOMS"] >= data_residential["BEDRM"]) & (
-        data_residential["BATHRM"] < 24))]
+data_residential["FIREPLACES"].value_counts()
+# There are few houses with more than 10 fireplaces, I would exclude them too
 
-# data_residential.shape # (59847, 23)
-data_residential.loc[:,['BATHRM','ROOMS','BEDRM','PRICE','SALEDATE']].head()
+data_residential = data_residential[(
+        (data_residential['ROOMS'] < 100) & (data_residential['ROOMS'] >= data_residential['BEDRM']) & (
+        data_residential['BATHRM'] < 24) & (data_residential['FIREPLACES'] < 10))]
+
+# data_residential.shape # (59839, 22)
+data_residential.loc[:, ['BATHRM', 'ROOMS', 'BEDRM', 'PRICE', 'SALEDATE','FIREPLACES']].describe()
+data_residential.loc[:, ['BATHRM', 'ROOMS', 'BEDRM', 'PRICE', 'SALEDATE']].head()
 
 data_residential.sort_values('SALEDATE', inplace=True)
 
 data_residential.to_csv("data_residential.csv", header=True)  # To save the residential data
-# TODO: redo a graph and do a new graph to make sure it looks good.
 
 # STEP 2: Investigate the Address data.
 # This dataset complements residetial data with some spacial information
@@ -169,20 +168,19 @@ data_address.info()
 data_address.head()
 
 # Let's check if there are any duplicated indexes ('SSL') and treat them the same way we did with the residential information.
-# data_address.index.duplicated().any()  # True, so let's drop the duplicates
+data_address.index.duplicated().any()  # True, so let's drop the duplicates
 data_address = data_address[~data_address.index.duplicated(keep='last')]
 
 # Choosing what columns to keep
 address_columns = ["FULLADDRESS", "CITY", "STATE", "ZIPCODE", "LATITUDE", "LONGITUDE",
-                   "ASSESSMENT_NBHD", "CENSUS_TRACT",'CENSUS_BLOCK', "WARD"]
+                   "ASSESSMENT_NBHD", "CENSUS_TRACT", 'CENSUS_BLOCK', "WARD"]
 
 data_address = data_address[address_columns]
 # data_address.shape #
 # data_residential.shape #
 
-dataset = pd.merge(data_residential,data_address,how="left",on="SSL")
+dataset = pd.merge(data_residential, data_address, how="left", on="SSL")
 dataset.to_csv("DC_Residential_Properties.csv", header=True)
-
 
 ############################
 # Useful Commands for analysis:
