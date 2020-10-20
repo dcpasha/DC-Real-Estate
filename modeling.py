@@ -35,11 +35,18 @@ X = dc_data[dc_features]
 X.describe()
 X.head()
 
-dc_data.loc[:,dc_data['AYB']==0]
+# WORKING ON THIS
+# TODO: RUN CODE to get new DATA
+# TODO: TAke care for the bathroom outlier.
+dc_data.loc[dc_data['AYB'] == 0, ['AYB']] = dc_data['EYB'] - 40
+dc_data.loc[dc_data['AYB'] == 0, ['AYB']]
+
+# dc_data['AYB'].fillna(dc_data['EYB'] - 40, inplace=True)
+# dc_data.loc[dc_data['AYB'] == 0, ['AYB']].fill(dc_data['EYB'] - 40, inplace=True)
+dc_data['test'] = dc_data['AYB'].apply(lambda x: dc_data['EYB'] - 40 if x == 0 else dc_data['AYB'])
 
 # Building a Decision Tree Model: BAD because we have an issue with "In=Sample" Scores
 from sklearn.tree import DecisionTreeRegressor
-
 # Define model. You should specify a number for random_state
 # to make sure that you have the same results each run
 dc_model = DecisionTreeRegressor(random_state=1)
