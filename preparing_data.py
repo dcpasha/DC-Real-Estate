@@ -156,7 +156,6 @@ data_residential = data_residential[(
 # data_residential.shape # (59839, 22)
 data_residential.loc[:, ['BATHRM', 'ROOMS', 'BEDRM', 'PRICE', 'SALEDATE','FIREPLACES']].describe()
 data_residential.loc[:, ['BATHRM', 'ROOMS', 'BEDRM', 'PRICE', 'SALEDATE']].head()
-
 data_residential.sort_values('SALEDATE', inplace=True)
 
 data_residential.to_csv("data_residential.csv", header=True)  # To save the residential data
@@ -180,6 +179,8 @@ data_address = data_address[address_columns]
 # data_residential.shape #
 
 dataset = pd.merge(data_residential, data_address, how="left", on="SSL")
+# Drop entries with missing FULLADDRESS
+dataset.dropna(subset=['FULLADDRESS'], inplace=True)
 dataset.to_csv("DC_Residential_Properties.csv", header=True)
 
 ############################
