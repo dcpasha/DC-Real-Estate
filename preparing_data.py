@@ -105,6 +105,9 @@ EYB_AYB_difference.mean()
 # If AYB is missing, we will replace it with its EYB - 40.
 # data_residential.loc[data_residential['AYB'].isnull(), ['AYB', 'EYB']] # Shows us what entries having a missing 'AYB'
 data_residential['AYB'].fillna(data_residential['EYB'] - 40, inplace=True)
+# Replacing when 'AYB' is equal to zero, with the appropriated 'EYB' - 40.
+data_residential.loc[data_residential['AYB'] == 0, ['AYB']] = data_residential['EYB'] - 40
+
 
 # If YR_RMDL is missing, we will replace it with EYB because it is a newer date compared to AYB.
 data_residential['YR_RMDL'].fillna(data_residential['EYB'], inplace=True)
