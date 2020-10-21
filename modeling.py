@@ -108,6 +108,8 @@ dc_model.fit(X_train, y_train)
 # get predicted prices on validation data
 val_predictions = dc_model.predict(X_valid)
 print(mean_absolute_error(y_valid, val_predictions))
+
+
 # MAE is 332251.2884539033 using ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES'].
 
 # Experimenting with different models
@@ -120,7 +122,7 @@ def get_mae(max_leaf_nodes, train_X, val_X, train_y, val_y):
     model.fit(train_X, train_y)
     pred_val = model.predict(val_X)
     mae = mean_absolute_error(val_y, pred_val)
-    return (mae)
+    return mae
 
 
 # compare MAE with differing values of max_leaf_nodes
@@ -129,10 +131,6 @@ for max_leaf_nodes in [5, 25, 50, 75, 100, 250, 500, 1000, 5000]:
     print("Max leaf nodes: %d  \t\t Mean Absolute Error:  %d" % (max_leaf_nodes, my_mae))
 # It looks like 250 is the best value for max_leaf_nodes.
 # MAE is 263,091
-
-# DONE
-# DONE
-# DONE
 
 # In order to avoid Data Leakage:
 # We need to distinguish training data from validation data. Validation data is meant to measure how the model performs
@@ -151,27 +149,12 @@ for max_leaf_nodes in [5, 25, 50, 75, 100, 250, 500, 1000, 5000]:
 # MODEL 2:
 # Building a Random Forest Model:
 # Load Data.
-dc_data = pd.read_csv(file_location)
-
-# Selecting the Prediction Target.
-y = dc_data['PRICE'].copy()
-
-# We need to choose the same features for the Random Forest Model in order to compare it to our Decision Tree Model.
-features = ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES', 'AYB']
-X = dc_data[features].copy()
-# Review the data that we will used to predict house prices.
-X.describe()
-X.head()
-
-# Divide data into training and validation subsets
-X_train_full, X_valid_full, y_train, y_valid = train_test_split(X, y, train_size=0.8, test_size=0.2,
-                                                                random_state=0)
-
 model = RandomForestRegressor(n_estimators=100, random_state=0)
-model.fit(X_train_full, y_train)
-preds = model.predict(X_valid_full)
-print(mean_absolute_error(y_valid, preds))
-# MAE is 256196
+dc_model.fit(X_train, y_train)
+# get predicted prices on validation data
+val_predictions = dc_model.predict(X_valid)
+print(mean_absolute_error(y_valid, val_predictions))
+# MAE is 330998
 
 # How to find n_estimators?
 # n_estimators - # of trees in the forest.
