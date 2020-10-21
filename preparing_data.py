@@ -10,7 +10,7 @@ file_path_address_points = "/Users/pavelpotapov/Data/Real_Estate_DC/Address_Poin
 # Loading Data
 data_residential = pd.read_csv(file_path_residential, index_col='SSL')
 print("Residential data is loaded")
-data_address = pd.read_csv(file_path_address_points, index_col='SSL')
+data_address = pd.read_csv(file_path_address_points, index_col='SSL', low_memory=False)
 # It complains about. dtype={'LOT': float}
 print("Address data is loaded")
 
