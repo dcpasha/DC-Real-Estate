@@ -4,18 +4,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error  # Model Validation:
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-
-# Function for comparing different approaches
-def score_dataset(X_train, X_valid, y_train, y_valid):
-    model = RandomForestRegressor(n_estimators=100, random_state=0)
-    model.fit(X_train, y_train)
-    preds = model.predict(X_valid)
-    return mean_absolute_error(y_valid, preds)
-
+# from xgboost import XGBRegressor # $ brew install libomp
 
 # Read the Data
 file_location = "/Users/pavelpotapov/PycharmProjects/DC_Real_Estate/DC_Residential_Properties.csv"
@@ -65,7 +54,9 @@ print(X_train.columns)
 #
 
 # We select the following features to predict our Target
-features = ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES', 'AYB']
+# features = ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES', 'AYB']    # works. have MAE
+features = ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES', 'AYB', 'WARD']
+
 X_train = X_train_full[features].copy()
 X_valid = X_valid_full[features].copy()
 
@@ -74,63 +65,112 @@ print(cardinality_low_cols)
 # ['AC', 'STRUCT_D', 'CITY', 'STATE', 'WARD']
 # It does not make sense to you City or State column because we are looking at properties within Washington, DC.
 # We will use Ward to indicate the geographical location of each house within the city.
+# Ward - administrative division of a city or borough that typically elects and is
+# represented by a councilor or councilors.
 
 # One-Hot Encoding
 # We will apply One-Hot Encoding to the Ward column because it has a categorical data.
 # Apply one-hot encoder to each column with categorical data
-# OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
-# OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(X_train['WARD']))
-# OH_cols_valid = pd.DataFrame(OH_encoder.transform(X_valid['WARD']))
-#
-# # One-hot encoding removed index; put it back
-# OH_cols_train.index = X_train.index
-# OH_cols_valid.index = X_valid.index
-#
-# # Remove categorical columns (will replace with one-hot encoding)
-# s = (X_train.dtypes == 'object')
-# object_cols = list(s[s].index)
-# num_X_train = X_train.drop(object_cols, axis=1)
-# num_X_valid = X_valid.drop(object_cols, axis=1)
-#
-# # Add one-hot encoded columns to numerical features
-# OH_X_train = pd.concat([num_X_train, OH_cols_train], axis=1)
-# OH_X_valid = pd.concat([num_X_valid, OH_cols_valid], axis=1)
-#
-# print("MAE from Approach 3 (One-Hot Encoding):")
-# print(score_dataset(OH_X_train, OH_X_valid, y_train, y_valid))
+columns_to_one_hot_encode = ['WARD']
 
+OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(X_train[columns_to_one_hot_encode]))
+OH_cols_valid = pd.DataFrame(OH_encoder.transform(X_valid[columns_to_one_hot_encode]))
+
+# # One-hot encoding removed index; put it back
+OH_cols_train.index = X_train.index
+OH_cols_valid.index = X_valid.index
+
+# # Remove categorical columns (will replace with one-hot encoding)
+s = (X_train.dtypes == 'object')
+object_cols = list(s[s].index)
+num_X_train = X_train.drop(object_cols, axis=1)
+num_X_valid = X_valid.drop(object_cols, axis=1)
+
+# # Add one-hot encoded columns to numerical features
+OH_X_train = pd.concat([num_X_train, OH_cols_train], axis=1)
+OH_X_valid = pd.concat([num_X_valid, OH_cols_valid], axis=1)
 
 # MODEL 1:
-# Building a Decision Tree Regression Model:
-# A Simple Decision Tree:
-dc_model = DecisionTreeRegressor()
-dc_model.fit(X_train, y_train)
-# get predicted prices on validation data
-val_predictions = dc_model.predict(X_valid)
-print(mean_absolute_error(y_valid, val_predictions))
-
-
-# MAE is 332251.2884539033 using ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES'].
+# A Decision Tree Regression Model:
+model_decision_tree = DecisionTreeRegressor(random_state=0)
+model_decision_tree.fit(OH_X_train, y_train)
+preds = model_decision_tree.predict(OH_X_valid)
+print(mean_absolute_error(y_valid, preds))
+# MAE is 309112.17062296043
 
 # Experimenting with different models
 # Underfitting and Overfitting
 # The most important option is to determine the tree's depth,
 # max_leaf_nodes argument provides a very sensible way to control overfitting vs underfitting.
 # Let's compare MAE scores from different values for max_leaf_node
-def get_mae(max_leaf_nodes, train_X, val_X, train_y, val_y):
+def get_mae(max_leaf_nodes, OH_X_train, OH_X_valid, y_train, y_valid):
     model = DecisionTreeRegressor(max_leaf_nodes=max_leaf_nodes, random_state=0)
-    model.fit(train_X, train_y)
-    pred_val = model.predict(val_X)
-    mae = mean_absolute_error(val_y, pred_val)
+    model.fit(OH_X_train, y_train)
+    pred_val = model.predict(OH_X_valid)
+    mae = mean_absolute_error(y_valid, pred_val)
     return mae
 
 
 # compare MAE with differing values of max_leaf_nodes
 for max_leaf_nodes in [5, 25, 50, 75, 100, 250, 500, 1000, 5000]:
-    my_mae = get_mae(max_leaf_nodes, X_train, X_valid, y_train, y_valid)
-    print("Max leaf nodes: %d  \t\t Mean Absolute Error:  %d" % (max_leaf_nodes, my_mae))
-# It looks like 250 is the best value for max_leaf_nodes.
-# MAE is 263,091
+    my_mae = get_mae(max_leaf_nodes, OH_X_train, OH_X_valid, y_train, y_valid)
+    print("Max leaf nodes is %d  \t\t , and Mean Absolute Error is  %d" % (max_leaf_nodes, my_mae))
+# It looks like 500 is the best value for max_leaf_nodes.
+# MAE is 243,105
+
+
+# Model 2:
+# A Random Forest Regression Model (AKA "ensemble method")
+# Ensemble methods combine the predictions of several models.
+model_random_forest = RandomForestRegressor(n_estimators=100, random_state=0)
+model_random_forest.fit(OH_X_train, y_train)
+preds = model_random_forest.predict(OH_X_valid)
+print(mean_absolute_error(y_valid, preds))
+# MAE is 234565.21492900274.
+
+# How to find n_estimators?
+# n_estimators - # of trees in the forest.
+# Let's define a few Random Forest Models
+model_random_forest_1 = RandomForestRegressor(n_estimators=50, random_state=0)
+model_random_forest_2 = RandomForestRegressor(n_estimators=100, random_state=0)
+model_random_forest_3 = RandomForestRegressor(n_estimators=50, criterion='mae', random_state=0)
+model_random_forest_4 = RandomForestRegressor(n_estimators=100, criterion='mae', random_state=0)
+model_random_forest_5 = RandomForestRegressor(n_estimators=100, min_samples_split=20, random_state=0)
+model_random_forest_6 = RandomForestRegressor(n_estimators=200, min_samples_split=20, random_state=0)
+model_random_forest_7 = RandomForestRegressor(n_estimators=100, max_depth=7, random_state=0)
+model_random_forest_8 = RandomForestRegressor(n_estimators=200, max_depth=7, random_state=0)
+
+models = [model_random_forest_1, model_random_forest_2
+          ,model_random_forest_3, model_random_forest_4,
+          model_random_forest_5, model_random_forest_6, model_random_forest_7, model_random_forest_8]
+
+
+# In order to find the best model define a function to find the best MAE
+def model_validation(model, X_t = OH_X_train, X_v=OH_X_valid, y_t=y_train, y_v=y_valid):
+    model.fit(X_t, y_t)
+    preds = model.predict(X_v)
+    return mean_absolute_error(y_v, preds)
+
+
+for i in range(0, len(models)):
+    mae = model_validation(models[i])
+    print("Random Forest Model %d had MAE: %d " % (i+3, mae))
+
+# Random Forest Model 1 had MAE: 235805
+# Random Forest Model 2 had MAE: 234565
+model_random_forest_3.fit(OH_X_train, y_train)
+preds = model_random_forest_3.predict(OH_X_valid)
+print(mean_absolute_error(y_valid, preds))
+
+
+# MODEL 3:
+# XGBoost (Extreme gradient boosting)
+# model_xgboost = XGBRegressor()
+# model_xgboost.fit(OH_X_train, y_train)
+# preds = model_xgboost.predict(OH_X_valid)
+# print(mean_absolute_error(y_valid, preds))
+
 
 # In order to avoid Data Leakage:
 # We need to distinguish training data from validation data. Validation data is meant to measure how the model performs
@@ -142,19 +182,4 @@ for max_leaf_nodes in [5, 25, 50, 75, 100, 250, 500, 1000, 5000]:
 # We avoid train-test contamination by doing preprocessing only on the training data. Location is believed to be one
 # of the most important factors in determining house prices. We can use either Zipcode or Ward to create a location
 # based category for our data.
-# - Ward is an administrative division of a city or borough that typically elects and is
-# represented by a councilor or councilors.
 
-
-# MODEL 2:
-# Building a Random Forest Model:
-# Load Data.
-model = RandomForestRegressor(n_estimators=100, random_state=0)
-dc_model.fit(X_train, y_train)
-# get predicted prices on validation data
-val_predictions = dc_model.predict(X_valid)
-print(mean_absolute_error(y_valid, val_predictions))
-# MAE is 330998
-
-# How to find n_estimators?
-# n_estimators - # of trees in the forest.
