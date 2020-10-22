@@ -54,7 +54,6 @@ print(X_train.columns)
 #
 
 # We select the following features to predict our Target
-# features = ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES', 'AYB']    # works. have MAE
 features = ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES', 'AYB', 'WARD']
 
 X_train = X_train_full[features].copy()
