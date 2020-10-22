@@ -3,8 +3,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error  # Model Validation:
-# from xgboost import XGBRegressor # $ brew install libomp
+from sklearn.metrics import mean_absolute_error
+from xgboost import XGBRegressor
 
 # Read the Data
 file_location = "/Users/pavelpotapov/PycharmProjects/DC_Real_Estate/DC_Residential_Properties.csv"
@@ -18,15 +18,15 @@ X = dc_data.drop(['PRICE'], axis=1)
 X_train_full, X_valid_full, y_train, y_valid = train_test_split(X, y, train_size=0.8, test_size=0.2,
                                                                 random_state=0)
 # split data into training and validation data, for both features and target.
-# train_size - represent the proportion of the dataset to include in the test split.
-# test_size - represent the proportion of the dataset to include in the train split.
-# random_state - controls the shuffling applied to the data before applying the split.
+# train_size: represents the proportion of the dataset to include in the test split.
+# test_size: represents the proportion of the dataset to include in the train split.
+# random_state: controls the shuffling applied to the data before applying the split.
 
 # Let's see if there are any missing values in the dataset.
 X_train_full.isnull().any()
 # There are none, so we do not have to drop any.
 
-# X_train_full.shape (47605, 32)
+# X_train_full.shape
 
 # Select numerical columns
 numerical_cols = [cname for cname in X_train_full.columns if X_train_full[cname].dtype in ['int64', 'float64']]
@@ -97,6 +97,8 @@ model_decision_tree = DecisionTreeRegressor(random_state=0)
 model_decision_tree.fit(OH_X_train, y_train)
 preds = model_decision_tree.predict(OH_X_valid)
 print(mean_absolute_error(y_valid, preds))
+
+
 # MAE is 309112.17062296043
 
 # Experimenting with different models
@@ -117,7 +119,7 @@ for max_leaf_nodes in [5, 25, 50, 75, 100, 250, 500, 1000, 5000]:
     my_mae = get_mae(max_leaf_nodes, OH_X_train, OH_X_valid, y_train, y_valid)
     print("Max leaf nodes is %d  \t\t , and Mean Absolute Error is  %d" % (max_leaf_nodes, my_mae))
 # It looks like 500 is the best value for max_leaf_nodes.
-# MAE is 243,105
+# MAE is 243,105. We improved a model a lot by selecting controlling overfitting and underfitting.
 
 
 # Model 2:
@@ -127,27 +129,29 @@ model_random_forest = RandomForestRegressor(n_estimators=100, random_state=0)
 model_random_forest.fit(OH_X_train, y_train)
 preds = model_random_forest.predict(OH_X_valid)
 print(mean_absolute_error(y_valid, preds))
-# MAE is 234565.21492900274.
+# MAE is 234565.21492900274. The random forest is better than a single Decision tree.
 
-# How to find n_estimators?
-# n_estimators - # of trees in the forest.
+# We can build a few different Random Forest models and see which one is better.
+# n_estimators: number of trees in the forest.
+# min_samples_split: the minimum number of samples required to split an internal node.
+# max_depth: the maximum depth of the tree. If None,
+# then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples
+
 # Let's define a few Random Forest Models
 model_random_forest_1 = RandomForestRegressor(n_estimators=50, random_state=0)
 model_random_forest_2 = RandomForestRegressor(n_estimators=100, random_state=0)
-model_random_forest_3 = RandomForestRegressor(n_estimators=50, criterion='mae', random_state=0)
-model_random_forest_4 = RandomForestRegressor(n_estimators=100, criterion='mae', random_state=0)
-model_random_forest_5 = RandomForestRegressor(n_estimators=100, min_samples_split=20, random_state=0)
-model_random_forest_6 = RandomForestRegressor(n_estimators=200, min_samples_split=20, random_state=0)
-model_random_forest_7 = RandomForestRegressor(n_estimators=100, max_depth=7, random_state=0)
-model_random_forest_8 = RandomForestRegressor(n_estimators=200, max_depth=7, random_state=0)
+model_random_forest_3 = RandomForestRegressor(n_estimators=100, min_samples_split=20, random_state=0)
+model_random_forest_4 = RandomForestRegressor(n_estimators=200, min_samples_split=20, random_state=0)
+model_random_forest_5 = RandomForestRegressor(n_estimators=100, max_depth=7, random_state=0)
+model_random_forest_6 = RandomForestRegressor(n_estimators=200, max_depth=7, random_state=0)
+model_random_forest_7 = RandomForestRegressor(n_estimators=300, random_state=0)
 
-models = [model_random_forest_1, model_random_forest_2
-          ,model_random_forest_3, model_random_forest_4,
-          model_random_forest_5, model_random_forest_6, model_random_forest_7, model_random_forest_8]
+models = [model_random_forest_1, model_random_forest_2, model_random_forest_4, model_random_forest_5,
+          model_random_forest_6, model_random_forest_7]
 
 
 # In order to find the best model define a function to find the best MAE
-def model_validation(model, X_t = OH_X_train, X_v=OH_X_valid, y_t=y_train, y_v=y_valid):
+def model_validation(model, X_t=OH_X_train, X_v=OH_X_valid, y_t=y_train, y_v=y_valid):
     model.fit(X_t, y_t)
     preds = model.predict(X_v)
     return mean_absolute_error(y_v, preds)
@@ -155,31 +159,67 @@ def model_validation(model, X_t = OH_X_train, X_v=OH_X_valid, y_t=y_train, y_v=y
 
 for i in range(0, len(models)):
     mae = model_validation(models[i])
-    print("Random Forest Model %d had MAE: %d " % (i+3, mae))
+    print("Random Forest Model %d had MAE: %d " % (i + 1, mae))
 
 # Random Forest Model 1 had MAE: 235805
 # Random Forest Model 2 had MAE: 234565
-model_random_forest_3.fit(OH_X_train, y_train)
-preds = model_random_forest_3.predict(OH_X_valid)
-print(mean_absolute_error(y_valid, preds))
+# Random Forest Model 3 had MAE: 228791
+# Random Forest Model 4 had MAE: 242684
+# Random Forest Model 5 had MAE: 242569
+# Random Forest Model 6 had MAE: 233667
+# Model 3 has the best MAE.
 
 
 # MODEL 3:
 # XGBoost (Extreme gradient boosting)
-# model_xgboost = XGBRegressor()
-# model_xgboost.fit(OH_X_train, y_train)
-# preds = model_xgboost.predict(OH_X_valid)
-# print(mean_absolute_error(y_valid, preds))
+model_xgboost = XGBRegressor()
+model_xgboost.fit(OH_X_train, y_train)
+preds = model_xgboost.predict(OH_X_valid)
+print(mean_absolute_error(y_valid, preds))
+# Out of box XGBoost gives us MAE = 231118
 
+# Let's try to fine-tune some parameters in order to get better results.
+# n_estimators: number of gradient boosted trees. Like how many times to go through the modeling cycle described above.
+# If it is too low => underfitting, but too high => overfitting
 
-# In order to avoid Data Leakage:
-# We need to distinguish training data from validation data. Validation data is meant to measure how the model performs
-# on the data that it has not seen before. We can create train-test contamination by preprocessing our data before
-# calling train_test_split(). If we do so, our model may get good validation scores, but performs poorly when you deploy
-# it to make decisions.
-# We need to exclude the validation data, from any type of fitting, including the fitting of preprocessing steps.
+# learning_rate: is used to control the weighing of new trees added to the model.
+# Thus, each new tree will add to the ensemble less weight.
 
-# We avoid train-test contamination by doing preprocessing only on the training data. Location is believed to be one
-# of the most important factors in determining house prices. We can use either Zipcode or Ward to create a location
-# based category for our data.
+# early_stopping_rounds: offers a way to automatically find the ideal value for n_estimators.
+# It will stop iteration of the model when the validation score stops improving.
+# This parameter also helps to reduce overfitting of training data.
+# It does so, by selecting the infection point
+# where performance on the test(validation) dataset starts to decrease
+# while performance on the training dataset continues to improve.
 
+# eval_set: contains the validation set that is used by early_stopping_rounds to reduce over/inderfitting.
+
+# n_jobs: is used to increase the speed of building our models.
+# It should be equal to the number of cores on our machine.
+
+# verbose: if we set it to True, we will be able to monitor how the model behaves.
+# You will also see the evaluation metric(eval_metric) for each training iteration.
+eval_set = [(OH_X_valid, y_valid)]
+
+model_xgboost_1 = XGBRegressor(n_estimators=1000, learning_rate=0.05, n_jobs=4)
+model_xgboost_1.fit(OH_X_train, y_train,
+                    early_stopping_rounds=5,
+                    eval_metric='rmse',
+                    eval_set=eval_set,
+                    verbose=False)
+preds = model_xgboost_1.predict(OH_X_valid)
+print(mean_absolute_error(y_valid, preds))
+# MAE is 232782.00633559487
+
+model_xgboost_2 = XGBRegressor(n_estimators=1000, learning_rate=0.05, n_jobs=4)
+model_xgboost_2.fit(OH_X_train, y_train,
+                    early_stopping_rounds=5,
+                    eval_metric='mae',
+                    eval_set=eval_set,
+                    verbose=False)
+preds = model_xgboost_2.predict(OH_X_valid)
+print(mean_absolute_error(y_valid, preds))
+# MAE is 227867.78804113803.
+# This is the best mean absolute error that we got from Extreme gradient boosting model
+# using features = ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES', 'AYB', 'WARD']
+# to predict residential house prices.
