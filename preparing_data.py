@@ -11,14 +11,13 @@ file_path_address_points = "/Users/pavelpotapov/Data/Real_Estate_DC/Address_Poin
 data_residential = pd.read_csv(file_path_residential, index_col='SSL')
 print("Residential data is loaded")
 data_address = pd.read_csv(file_path_address_points, index_col='SSL', low_memory=False)
-# It complains about. dtype={'LOT': float}
 print("Address data is loaded")
 
 # Let's look at first five rows and shape of the Residential data frame
 # data_residential.head()
 
 # STEP 1: Investigate Residential Data
-# Column description
+# Column description:
 # SSL - The square, suffix, and lot
 # AYB - Actual Year Build. USE THIS.
 # EYB - Effective Date Build.
@@ -31,14 +30,14 @@ data_residential.shape  # Tells us the size (rows, columns) = (108499, 38) of th
 data_residential.describe()  # count, mean, std, and etc.
 
 # Investigate the dataset:
-# There are 38 columns. Let's investigate them and exclude those that are redundant.
+# There are 38 columns. Let's investigate and exclude those that are redundant.
 # The columns 'ROOF_D', 'INTWALL_D', and 'EXTWALL_D' tell us from what materials the walls and roof are made.
 data_residential['INTWALL_D'].value_counts()
 data_residential['EXTWALL_D'].value_counts()
 data_residential['ROOF_D'].value_counts()
 
 # The following columns: 'HEAT', 'EXTWALL', 'ROOF',  'INTWALL' are interger values of their counterpart columns and can be dropped.
-# Let's make a list of columns that does not carry a lot information and drop them.
+# Let's make a list of columns that does not carry a crucial infromation and drop them.
 columns_to_drop = ['OBJECTID', 'HEAT', 'STRUCT', 'GRADE', 'GRADE_D', 'CNDTN', 'CNDTN_D', 'EXTWALL', 'ROOF', 'QUALIFIED',
                    'STYLE', 'STYLE_D', 'INTWALL', 'USECODE', 'GIS_LAST_MOD_DTTM', 'BLDG_NUM']
 
@@ -55,8 +54,8 @@ data_residential.drop(columns_to_drop, axis=1, inplace=True)
 # data_residential.isnull().sum()
 
 # There are a few empty entries, but 'PRICE' and 'ROOM' columns miss a lot of entires.
-# We cannot analysis houses that do not have a sales price, and at least one room.
-# It does not even constitues it as a house. Drop entries without price and rooms.
+# We cannot analysis houses that do not have a sales price and at least one room.
+# It does not even constitues it as a house if it doesn't have a room. Drop entries without price and at least one room.
 data_residential.dropna(subset=['PRICE', 'ROOMS'], inplace=True)
 # Let's also drop entries where 'PRICE' is zero.
 data_residential = data_residential.loc[(data_residential['PRICE'] != 0), :]
@@ -64,7 +63,8 @@ data_residential = data_residential.loc[(data_residential['PRICE'] != 0), :]
 # data_residential.astype(bool).sum(axis=0)
 # data_residential.isnull().sum()
 
-# Now it looks better. There are still a few missing entries in columns 'KITCHENS', 'FIREPLACES' and 'BEDRM'.
+# Now, it looks better. There are still a few missing entries in columns 'KITCHENS', 'FIREPLACES' and 'BEDRM'.
+# It is possible to have a house without a kitchen, it is called efficiency studio.
 # If they are missing, let's assume that they do not exist. Thus, we replace missing values with 0.
 data_residential.loc[:, 'FIREPLACES'].fillna(value=0, inplace=True)
 data_residential.loc[:, 'KITCHENS'].fillna(value=0, inplace=True)
