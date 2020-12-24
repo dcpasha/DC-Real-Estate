@@ -130,11 +130,11 @@ data_residential.index.duplicated().any()
 # Let's investigate further.
 print(data_residential[data_residential.index.duplicated()])
 print(data_residential.loc[data_residential.index == '5890    0134', :])
-# Yes, there are some duplicates transactions, so we assume that all of them are.
+# Yes, there are some duplicates transactions.
 # Let's drop duplicate 'SSL' and only keep the last one.
 data_residential = data_residential[~data_residential.index.duplicated(keep='last')]
 
-# Let's make a correlation and see if we can detect any anomalies visually.
+# Let's make a correlation and see if we can detect any anomalies and represent them visually.
 plt.style.use('seaborn-colorblind')
 # Basic correlogram
 sns.pairplot(data_residential[['ROOMS', 'BATHRM', 'HF_BATHRM', 'BEDRM']], kind="scatter", diag_kind='kde',
@@ -161,7 +161,7 @@ data_residential.sort_values('SALEDATE', inplace=True)
 data_residential.to_csv("data_residential.csv", header=True)  # To save the residential data
 
 # STEP 2: Investigate the Address data.
-# This dataset complements residetial data with some spacial information
+# This dataset complements the residetial data with some spacial information.
 # Square Suffix Lot (SSL) will be used to merger residential data and address data.
 data_address.info()
 data_address.head()
@@ -175,15 +175,15 @@ address_columns = ["FULLADDRESS", "CITY", "STATE", "ZIPCODE", "LATITUDE", "LONGI
                    "ASSESSMENT_NBHD", "CENSUS_TRACT", 'CENSUS_BLOCK', "WARD"]
 
 data_address = data_address[address_columns]
-# data_address.shape #
-# data_residential.shape #
+
 
 dataset = pd.merge(data_residential, data_address, how="left", on="SSL")
 # Drop entries with missing FULLADDRESS
 dataset.dropna(subset=['FULLADDRESS'], inplace=True)
+# Saving our cleaned dataset to a csv file.
 dataset.to_csv("DC_Residential_Properties.csv", header=True)
 
-############################
+################################
 # Useful Commands for analysis:
 # Comparing Columns.
 # data_residential.loc[:, ['AYB', 'EYB', 'YR_RMDL']].head(100)
