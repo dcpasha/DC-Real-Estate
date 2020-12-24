@@ -6,60 +6,60 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from xgboost import XGBRegressor
 
-# Read/Upload the Data.
+# Read/Upload the Data:
 file_location = "/Users/pavelpotapov/PycharmProjects/DC_Real_Estate/DC_Residential_Properties.csv"
 dc_data = pd.read_csv(file_location)
 
-# Selecting target from predictor.
+# Selecting target from predictor:
 y = dc_data['PRICE'].copy()
 X = dc_data.drop(['PRICE'], axis=1)
 
-# Divide data into training and validation set.
+# Divide data into training and validation set:
 X_train_full, X_valid_full, y_train, y_valid = train_test_split(X, y, train_size=0.8, test_size=0.2,
                                                                 random_state=0)
-# split data into training and validation data, for both features and target.
+# Split data into training and validation data, for both features and target:
 # train_size: represents the proportion of the dataset to include in the test split.
 # test_size: represents the proportion of the dataset to include in the train split.
 # random_state: controls the shuffling applied to the data before applying the split.
 
-# Let's see if there are any missing values in the dataset.
+# Let's see if there are any missing values in the dataset:
 X_train_full.isnull().any()
 # There are none, so we do not have to drop any.
 
-# X_train_full.shape # To look at the shape of the data.
+X_train_full.shape # To look at the shape of the data.
 
-# Select numerical columns.
+# Select numerical columns:
 numerical_cols = [cname for cname in X_train_full.columns if X_train_full[cname].dtype in ['int64', 'float64']]
 
-# Select categorical columns with a low cardinality.
-# Cardinality - the number of unique values in a column
+# Select categorical columns with a low cardinality:
+# Cardinality - the number of unique values in a column.
 cardinality_low_cols = [cname for cname in X_train_full.columns if X_train_full[cname].nunique() < 10 and
                         X_train_full[cname].dtype == "object"]
 
-# Use only selected columns.
+# Use only selected columns:
 columns = numerical_cols + cardinality_low_cols
 X_train = X_train_full[columns].copy()
 X_valid = X_valid_full[columns].copy()
 
-# Let's look at summary and what columns we have left in our dataset.
+# Let's look at the summary and which columns are left in the dataset:
 print(X_train.describe())
 print(X_train.shape)  # (47605, 23)
 print(X_train.columns)
 
-# A list of features(things that we use to to make predictions) to choose from.
+# A list of features (things that we use to to make predictions) to choose from:
 # ['BATHRM', 'HF_BATHRM', 'NUM_UNITS', 'ROOMS', 'BEDRM', 'AYB', 'YR_RMDL',
 #        'EYB', 'STORIES', 'SALE_NUM', 'GBA', 'KITCHENS', 'FIREPLACES',
 #        'LANDAREA', 'ZIPCODE', 'LATITUDE', 'LONGITUDE', 'CENSUS_TRACT', 'AC',
 #        'STRUCT_D', 'CITY', 'STATE', 'WARD']
 #
 
-# We select the following features to predict our Target(Price).
+# We select the following features to predict our Target(Price):
 features = ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES', 'AYB', 'WARD']
 
 X_train = X_train_full[features].copy()
 X_valid = X_valid_full[features].copy()
 
-# Let's look at our categorical columns with a low cardinality
+# Let's look at our categorical columns with a low cardinality:
 print(cardinality_low_cols)
 # ['AC', 'STRUCT_D', 'CITY', 'STATE', 'WARD']
 # It does not make sense to use City or State column because we are looking at properties within Washington, DC.
@@ -69,36 +69,36 @@ print(cardinality_low_cols)
 
 # One-Hot Encoding
 # We will apply One-Hot Encoding to the Ward column because it has a categorical data.
-# Apply one-hot encoder to each column with categorical data.
+# Apply one-hot encoder to each column with categorical data:
 columns_to_one_hot_encode = ['WARD']
 
 OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
 OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(X_train[columns_to_one_hot_encode]))
 OH_cols_valid = pd.DataFrame(OH_encoder.transform(X_valid[columns_to_one_hot_encode]))
 
-#One-hot encoding removed index, so we need to put it back.
+#One-hot encoding removed index, so we need to put it back:
 OH_cols_train.index = X_train.index
 OH_cols_valid.index = X_valid.index
 
-# Remove the categorical columns. We will replace with one-hot encoding.
+# Remove the categorical columns. We will replace with one-hot encoding:
 s = (X_train.dtypes == 'object')
 object_cols = list(s[s].index)
 num_X_train = X_train.drop(object_cols, axis=1)
 num_X_valid = X_valid.drop(object_cols, axis=1)
 
-# Add one-hot encoded columns to numerical features
+# Add one-hot encoded columns to numerical features:
 OH_X_train = pd.concat([num_X_train, OH_cols_train], axis=1)
 OH_X_valid = pd.concat([num_X_valid, OH_cols_valid], axis=1)
 
 # MODEL 1:
-# A Decision Tree Regression Model:
+# Decision Tree Regression Model:
 model_decision_tree = DecisionTreeRegressor(random_state=0)
 model_decision_tree.fit(OH_X_train, y_train)
 preds = model_decision_tree.predict(OH_X_valid)
 print(mean_absolute_error(y_valid, preds))
-# MAE is 309112.17062296043
+# Mean Average Error (MAE) is 309112.17062296043
 
-# Experimenting with different models
+# Experimenting with different models:
 # Underfitting and Overfitting
 # The most important option is to determine the tree's depth,
 # max_leaf_nodes argument provides a very sensible way to control overfitting vs underfitting.
@@ -111,24 +111,24 @@ def get_mae(max_leaf_nodes, OH_X_train, OH_X_valid, y_train, y_valid):
     return mae
 
 
-# Compare MAE with differing values of max_leaf_nodes
+# Compare MAE with differing values of max_leaf_nodes:
 for max_leaf_nodes in [5, 25, 50, 75, 100, 250, 500, 1000, 5000]:
     my_mae = get_mae(max_leaf_nodes, OH_X_train, OH_X_valid, y_train, y_valid)
     print("Max leaf nodes is %d  \t\t , and Mean Absolute Error is  %d" % (max_leaf_nodes, my_mae))
-# It looks like 500 is the best value for max_leaf_nodes.
-# The new MAE is 243,105. We improved a model a lot by selecting and controlling overfitting and underfitting.
+# 500 is the best value for max_leaf_nodes.
+# The new MAE is 243,105. We considerably improved the model by selecting / controlling for overfitting and underfitting.
 
 
 # Model 2:
-# A Random Forest Regression Model (AKA "ensemble method").
+# A Random Forest Regression Model (AKA "ensemble method"):
 # Ensemble methods combine the predictions of several models together.
 model_random_forest = RandomForestRegressor(n_estimators=100, random_state=0)
 model_random_forest.fit(OH_X_train, y_train)
 preds = model_random_forest.predict(OH_X_valid)
 print(mean_absolute_error(y_valid, preds))
-# MAE is 234565.21492900274. We can see that the random forest is better than a single Decision tree.
+# MAE is 234565.21492900274. We can see that the Random Forest is better than a single Decision Tree.
 
-# We can build a few different Random Forest models and see which one is better.
+# We can build a few different Random Forest models and see which one is better:
 # n_estimators: number of trees in the forest.
 # min_samples_split: the minimum number of samples required to split an internal node.
 # max_depth: the maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or 
@@ -147,7 +147,7 @@ models = [model_random_forest_1, model_random_forest_2, model_random_forest_4, m
           model_random_forest_6, model_random_forest_7]
 
 
-# In order to find the best model define a function to find the best MAE.
+# In order to find the best model define a function to find the best MAE:
 def model_validation(model, X_t=OH_X_train, X_v=OH_X_valid, y_t=y_train, y_v=y_valid):
     model.fit(X_t, y_t)
     preds = model.predict(X_v)
@@ -168,24 +168,23 @@ for i in range(0, len(models)):
 
 
 # MODEL 3:
-# XGBoost (Extreme gradient boosting)
+# XGBoost (Extreme gradient boosting):
 model_xgboost = XGBRegressor()
 model_xgboost.fit(OH_X_train, y_train)
 preds = model_xgboost.predict(OH_X_valid)
 print(mean_absolute_error(y_valid, preds))
-# Out of box XGBoost gives us MAE = 231118
+# Out of box XGBoost gives us MAE = 231118.
 
-# Let's try to fine-tune some parameters in order to get better results.
+# Let's try to fine-tune some parameters in order to get better results:
 # n_estimators: number of gradient boosted trees. Like how many times to go through the modeling cycle described above.
-# If it is too low, it leads to underfitting. However, if it is too high, it leads to overfitting.
+# If it is too low, it leads to underfitting. If it is too high, it leads to overfitting.
 
 # learning_rate: is used to control the weighing of new trees added to the model.
 # Thus, each new tree will add to the ensemble less weight.
 
 # early_stopping_rounds: offers a way to automatically find the ideal value for n_estimators.
 # It will stop iteration of the model when the validation score stops improving.
-# This parameter also helps to reduce overfitting of training data.
-# It does so, by selecting the infection point
+# This parameter also helps to reduce overfitting of training data by selecting the inflection point
 # where performance on the test(validation) dataset starts to decrease
 # while performance on the training dataset continues to improve.
 
@@ -205,7 +204,7 @@ model_xgboost_1.fit(OH_X_train, y_train,
                     verbose=False)
 preds = model_xgboost_1.predict(OH_X_valid)
 print(mean_absolute_error(y_valid, preds))
-# MAE is 232782.00633559487
+# MAE is 232782.00633559487.
 
 model_xgboost_2 = XGBRegressor(n_estimators=1000, learning_rate=0.05, n_jobs=4)
 model_xgboost_2.fit(OH_X_train, y_train,
@@ -216,8 +215,8 @@ model_xgboost_2.fit(OH_X_train, y_train,
 preds = model_xgboost_2.predict(OH_X_valid)
 print(mean_absolute_error(y_valid, preds))
 # MAE is 227867.78804113803.
-# This is the best mean absolute error that we got from Extreme gradient boosting model
+# This is the best mean absolute error that we got from the Extreme Gradient Boosting model
 # using features = ['BATHRM', 'ROOMS', 'GBA', 'LANDAREA', 'FIREPLACES', 'AYB', 'WARD']
 # to predict residential house prices. It is possible to improve our model by including 
-# more features and see which features impact prices the most. 
-# It can be intersting to include demographic data such as race, gender, income, migration patterns, and population growth. 
+# more features and seeing which combination of features impact prices the most. 
+# Including demographic data such as race, gender, income, migration patterns, and population growth can bring further insights. 
